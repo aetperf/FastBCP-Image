@@ -1,0 +1,14 @@
+docker build -t fastbcp:latest .
+
+docker run --rm -v D:/temp/tpch10/orders/csv:/app/data fastbcp:latest `
+     --connectiontype "mssql" `
+     --server "host.docker.internal,11433" `
+     --user "FastLogin" `
+     --password "FastPassword" `
+     --database "tpch10" `
+     --query "SELECT * FROM dbo.orders" `
+     --fileoutput "orders.csv" `
+     --directory "/app/data" `
+     --paralleldegree 11 `
+     --parallelmethod "Physloc" `
+     --merge true
