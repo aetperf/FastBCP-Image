@@ -1,0 +1,30 @@
+{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Serilog.Enrichers.Environment",
+      "Serilog.Enrichers.Thread",
+      "Serilog.Enrichers.Process",
+      "Serilog.Enrichers.Context"
+    ],
+    "MinimumLevel": "Debug",
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+            "outputTemplate": "{Timestamp:yyyy-MM-ddTHH:mm:ss.fff zzz} -|- {Application} -|- {runid} -|- {Level:u12} -|- {fulltargetname} -|- {Message}{NewLine}{Exception}",
+            "theme": "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console"
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithProcessId",
+      "WithThreadId"
+    ],
+    "Properties": {
+      "Application": "FastBCP"
+    }
+  }
+}
