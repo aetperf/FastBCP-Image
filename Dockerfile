@@ -8,6 +8,8 @@ RUN curl -L -o FastBCP.zip "https://aetpshared.s3.eu-west-1.amazonaws.com/FastBC
     && unzip FastBCP.zip \
     && rm FastBCP.zip
 
+COPY FastBCP_Settings.json ./
+
 RUN chmod +x ./FastBCP
 
 ENTRYPOINT ["./FastBCP"]
