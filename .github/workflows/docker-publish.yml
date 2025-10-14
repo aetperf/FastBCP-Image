@@ -1,0 +1,33 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag from FastBCP'
+        required: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          echo "Building Docker image for version ${{ github.event.inputs.version }}"
+          docker build --no-cache \
+            -t aetp/fastbcp:latest \
+            -t aetp/fastbcp:${{ github.event.inputs.version }} .
+
+      - name: Push Docker image
+        run: |
+          docker push aetp/fastbcp:latest
+          docker push aetp/fastbcp:${{ github.event.inputs.version }}

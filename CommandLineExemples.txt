@@ -12,3 +12,20 @@ docker run --rm -v D:/temp/tpch10/orders/csv:/app/data fastbcp:latest `
      --paralleldegree 11 `
      --parallelmethod "Physloc" `
      --merge true
+
+docker run --rm `
+  -v D:/licenses:/app/license `
+  -v D:/temp/tpch10/orders/csv:/app/data `
+  fastbcp:latest `
+  --connectiontype "mssql" `
+  --server "host.docker.internal,11433" `
+  --username "mon_user" `
+  --password "mon_motdepasse" `
+  --database "tpch10" `
+  --query "SELECT TOP(10000) * FROM dbo.orders" `
+  --fileoutput "orders.csv" `
+  --directory "/app/data" `
+  --paralleldegree 1 `
+  --parallelmethod "Physloc" `
+  --merge true `
+  --license "/app/license/FastBCP.lic"
