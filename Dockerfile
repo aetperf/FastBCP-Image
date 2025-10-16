@@ -10,6 +10,9 @@ RUN curl -L -o FastBCP.zip "https://aetpshared.s3.eu-west-1.amazonaws.com/FastBC
 
 COPY FastBCP_Settings.json /app/
 
+RUN mkdir -p /airflow/xcom \
+    && chmod -R 777 /airflow/xcom
+
 RUN chmod +x ./FastBCP
 
 ENTRYPOINT ["./FastBCP"]
