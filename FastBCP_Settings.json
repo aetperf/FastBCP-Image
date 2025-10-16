@@ -21,7 +21,7 @@
         "Args": {
           "fileSizeLimitBytes": 4194304,
           "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
-          "path": "/airflow/xcom/return.json"
+          "path": "/app/return.json"
         }
       }     
     ],
