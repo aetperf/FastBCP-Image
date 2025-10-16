@@ -7,7 +7,6 @@
       "Serilog.Enrichers.Process",
       "Serilog.Enrichers.Context"
     ],
-    "MinimumLevel": "Debug",
     "WriteTo": [
       {
         "Name": "Console",
