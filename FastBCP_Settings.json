@@ -15,7 +15,16 @@
             "theme": "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console",
             "applyThemeToRedirectedOutput": false
         }
-      }   
+      }
+      ,
+      {
+        "Name": "File",
+        "Args": {
+          "fileSizeLimitBytes": 4194304,
+          "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
+          "path": "/airflow/xcom/return.json"
+        }
+      }     
     ],
     "Enrich": [
       "FromLogContext",
