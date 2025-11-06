@@ -19,12 +19,12 @@ WORKDIR /work
 RUN mkdir -p /config /data && chown -R ${USER}:${USER} /config /data /work
 
 ######################################################################
-# Copy the FastBCP Linux x64 binary (>= 0.28.0) renamed to "fastbcp"
+# Copy the FastBCP Linux x64 binary (>= 0.28.0) 
 # Place it at the root of the repo before building.
 ######################################################################
-COPY --chown=${USER}:${USER} fastbcp /usr/local/bin/fastbcp
+COPY --chown=${USER}:${USER} FastBCP /usr/local/bin/FastBCP
 
-RUN chmod 0755 /usr/local/bin/fastbcp
+RUN chmod 0755 /usr/local/bin/FastBCP
 
 # OCI Labels
 LABEL org.opencontainers.image.title="FastBCP (CLI) - Runtime Docker Image" \
@@ -40,5 +40,5 @@ VOLUME ["/config", "/data", "/work"]
 USER ${USER}
 
 # ENTRYPOINT directly on the FastBCP binary
-ENTRYPOINT ["/usr/local/bin/fastbcp"]
+ENTRYPOINT ["/usr/local/bin/FastBCP"]
 
