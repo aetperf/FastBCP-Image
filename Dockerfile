@@ -1,15 +1,44 @@
-FROM ubuntu:22.04
+# syntax=docker/dockerfile:1.7
+FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y libicu70 && rm -rf /var/lib/apt/lists/*
+# Common runtime packages for self-contained .NET binaries (ICU/SSL/zlib/Kerberos), CA, tz, curl
+RUN set -eux; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates tzdata curl \
+      libicu72 libssl3 zlib1g libkrb5-3 \
+    ; rm -rf /var/lib/apt/lists/*
 
-# Airflow XCom
-RUN mkdir -p /airflow/xcom
+# Non-root user
+ARG USER=fastbcp
+ARG UID=10001
+RUN useradd -m -u ${UID} -s /usr/sbin/nologin ${USER}
 
-WORKDIR /app
+# Useful directories
+WORKDIR /work
+RUN mkdir -p /config /data && chown -R ${USER}:${USER} /config /data /work
 
-COPY app/ /app/
-COPY FastBCP_Settings.json /app/
+######################################################################
+# Copy the FastBCP Linux x64 binary (>= 0.28.0) renamed to "fastbcp"
+# Place it at the root of the repo before building.
+######################################################################
+COPY --chown=${USER}:${USER} fastbcp /usr/local/bin/fastbcp
 
-RUN chmod +x ./FastBCP
+RUN chmod 0755 /usr/local/bin/fastbcp
 
-ENTRYPOINT ["./FastBCP"]
+# OCI Labels
+LABEL org.opencontainers.image.title="FastBCP (CLI) - Runtime Docker Image" \
+      org.opencontainers.image.description="Minimal container to run FastBCP (parallel export to files/objects)" \
+      org.opencontainers.image.vendor="Architecture & Performance" \
+      org.opencontainers.image.source="https://github.com/aetperf/FastBCP-Image" \
+      org.opencontainers.image.licenses="Proprietary"
+
+# Standard volumes
+VOLUME ["/config", "/data", "/work"]
+
+# Default to non-root
+USER ${USER}
+
+# ENTRYPOINT directly on the FastBCP binary
+ENTRYPOINT ["/usr/local/bin/fastbcp"]
+
