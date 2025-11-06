@@ -1,1 +1,48 @@
-CommandLineExemples.txt
+# -------------------------------------------
+# FastBCP Image Repo - .gitignore
+# -------------------------------------------
+
+# === Local binaries (not to be committed) ===
+fastbcp
+fastbcp.exe
+FastBCP
+FastBCP.exe
+
+# === Local license files ===
+*.lic
+*.license
+/config/FastBCP.lic
+
+# === Build artifacts ===
+*.log
+*.tmp
+*.bak
+*.swp
+
+# === Docker related ===
+# Exclude build cache, local image layers, compose overrides
+.docker/
+docker-compose.override.yml
+Dockerfile.local
+
+# === OS / IDE junk ===
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+# Linux
+*~
+# VSCode / JetBrains
+.vscode/
+.idea/
+*.iml
+
+# === Output folders ===
+/data/
+/work/
+/config/
+
+# Keep the README, Dockerfile, and Compose files tracked
+!README.md
+!Dockerfile
+!docker-compose.yml
