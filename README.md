@@ -1,11 +1,11 @@
 # FastBCP - Docker Image (Linux x64) – v0.28.0+
 
-Minimal, production‑ready container image to run **FastBCP** (parallel export CLI). This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **inline** via `--license "<content>"` — no entrypoint script or license file is required.
+Minimal, production‑ready container image to run **FastBCP** (parallel export CLI). This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **inline** via `--license "<content>"` 
 
-> ⚠️ **Binary required**  
+> ⚠️ **Binary required for custom build**  
 > The FastBCP binary is **not** distributed in this repository. Request the **Linux x64** build here:  
 > 👉 https://www.arpe.io/get-your-fastbcp-trial/  
-> Rename it to `fastbcp`, place it at the repository root (next to the `Dockerfile`), then build the image.
+> unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
 ## Table of contents
 - [Prerequisites](#prerequisites)
@@ -25,10 +25,10 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 
 ## Prerequisites
 - Docker 24+ (or Podman)
-- **FastBCP Linux x64 ≥ 0.28.0** binary
-- Optional: `FastBCP_Settings.json` to mount/copy into `/config`
+- **FastBCP Linux x64 ≥ 0.28.0** binary (for build only)
+- Optional: `FastBCP_Settings.json` to mount/copy into `/config` for custom logging settings
 
-## Get the binary
+## Get the binary (for build only)
 1. Request a trial: https://www.arpe.io/get-your-fastbcp-trial/
 2. Rename the downloaded file to `fastbcp` and ensure it is executable if testing locally:
    ```bash
@@ -48,83 +48,160 @@ This container has `ENTRYPOINT` set to the `fastbcp` binary. Any arguments you p
 docker run --rm fastbcp:latest --help
 ```
 
-## License (≥ 0.28.0)
-Since 0.28.0, pass the **license content directly** via `--license "…"`. Several safe patterns:
+## License
+Since 0.28.0, pass the **license content directly** via `--license "…"`. Several 
 
-- **Environment variable + substitution** (recommended):
-  ```bash
-  export FASTBCP_LICENSE_CONTENT="$(cat ./licence.txt)"
-  docker run --rm fastbcp:latest     --license "${FASTBCP_LICENSE_CONTENT}" --version
-  ```
+## Prebuilt image on dockerhub
+You can also use a prebuilt image on DockerHub that already include the binary. You must provide your own license at runtime.
+- dockerhub versions/releases are aligned with the fastbcp versions/releases.
 
-- **Inline substitution**:
-  ```bash
-  docker run --rm fastbcp:latest     --license "$(cat ./licence.txt)" --version
-  ```
+```bash
+docker pull aetp/fastbcp:latest
+```
+or 
+```bash
+docker pull aetp/fastbcp:v0.28.1
+```
 
-- **Mounted file** (alternative):
-  ```bash
-  docker run --rm -v "$PWD/config:/config" fastbcp:latest     --license "$(cat /config/FastBCP.lic)" --version
-  ```
+# Usage
 
-> 🔐 **Good practice**: prefer `--env-file`, Docker/Compose/Kubernetes secrets, or managed identities for cloud credentials. Avoid leaving the license content in shell history.
+the docker image use as entrypoint the fastbcp binary, so you can run it directly with parameters like defined in the [FastBCP documentation](https://aetperf.github.io/FastBCP-Documentation/).
+
+You can get the **command line help** using this 
+
+```bash
+docker run --rm fastbcp:latest
+```
+
+You can get the **version** using this 
+
+```bash
+docker run --rm fastbcp:latest --version
+```
+
+## Samples
+
+- **Export from sql server to parquet on S3**:
+
+```bash  
+export licenseContent = cat ./FastBCP.lic
+docker run --rm \
+-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+-e AWS_REGION=${AWS_REGION} \
+fastbcp:latest \
+--connectiontype "mssql" \
+--server "host.docker.internal,1433" \
+--user "FastUser" \
+--password "FastPassword" \
+--database "tpch_test" \
+--query "SELECT * FROM dbo.orders where year(o_orderdate)=1998" \
+--fileoutput "orders.parquet" \
+--directory "s3://aetpftoutput/dockertest/" \
+--paralleldegree 12 \
+--parallelmethod "Ntile" \
+--distributekeycolumn "o_orderkey" \
+--merge false \
+--license $licenseContent 
+```
+
+
+🔐 **Good practice**: prefer `--env-file`, Docker/Compose/Kubernetes secrets, or managed identities for cloud credentials. Avoid leaving the license content in shell history.
 
 ## Volumes
 - `/work`   – working directory (container `WORKDIR`)
-- `/config` – optional configuration (e.g., `FastBCP_Settings.json`)
+- `/config` – optional configuration directory (e.g. to store `FastBCP_Settings.json` for custom logging)
 - `/data`   – target source/exports
 
-## Examples
+## Other Examples
 
-> The exact parameters depend on your source and target settings. The snippets below illustrate the call pattern from Docker.
+> The exact parameters depend on your source and target settings. The snippets below illustrate the call pattern from Docker in a **linux shell**.
 
-### 1) SQL Server → local CSV
+### 1) Export from sql server to csv /data using a filtered query as source and Ntile method as parallelism
 ```bash
-docker run --rm   --add-host=host.docker.internal:host-gateway   -v "$PWD/data:/data"   -e FASTBCP_LICENSE_CONTENT="$(cat ./licence.txt)"   fastbcp:latest     --license "${FASTBCP_LICENSE_CONTENT}"     export       --source "mssql://user:*****@host.docker.internal:1433/DbName?encrypt=true&trustServerCertificate=true"       --query  "SELECT * FROM dbo.BigTable"       --out    "/data/bigtable.csv"       --format csv --delimiter ";" --header
+export licenseContent = cat ./FastBCP.lic
+docker run --rm \
+fastbcp:latest \
+--connectiontype "mssql" \
+--server "host.docker.internal,1433" \
+--user "FastUser" \
+--password "FastPassword" \
+--database "tpch_test" \
+--query "SELECT * FROM dbo.orders where year(o_orderdate)=1998" \
+--fileoutput "orders.csv" \
+--directory "/data/orders/csv" \
+--delimiter "|" \
+--decimalseparator "." \
+--dateformat "yyyy-MM-dd HH:mm:ss" \
+--paralleldegree 12 \
+--parallelmethod "Ntile" \
+--distributekeycolumn "o_orderkey" \
+--merge false \
+--license $licenseContent 
 ```
 
-### 2) PostgreSQL → partitioned Parquet (local)
+### 2) PostgreSQL → partitioned Parquet to adls using a filtered query as source and Ctid method as parallelism
 ```bash
-docker run --rm   --add-host=host.docker.internal:host-gateway   -v "$PWD/data:/data"   -e FASTBCP_LICENSE_CONTENT="$(cat ./licence.txt)"   fastbcp:latest     --license "${FASTBCP_LICENSE_CONTENT}"     export       --source "postgres://user:*****@host.docker.internal:5432/db"       --table  public.lineitem       --out    "/data/lineitem_{part}.parquet"       --format parquet --parallel 16 --files 16
+export licenseContent = $(cat ./FastBCP.lic)
+export adlscontainer = "aetpadlseu"
+
+docker run --rm \
+-e AZURE_CLIENT_ID=${AZURE_CLIENT_ID} \
+-e AZURE_TENANT_ID=${AZURE_TENANT_ID} \
+-e AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET} \
+fastbcp:latest \
+--connectiontype "pgcopy" \
+--server "host.docker.internal:15432" \
+--user "FastUser" \
+--password "FastPassword" \
+--database "tpch" \
+--sourceschema "tpch_10" \
+--sourcetable "orders" \
+--query "SELECT * FROM tpch_10.orders where o_orderdate >= '1998-01-01' and o_orderdate < '1999-01-01'" \
+--fileoutput "orders.parquet" \
+--directory "abfss://${adlscontainer}.dfs.core.windows.net/fastbcpoutput/testdfs/orders" \
+--paralleldegree -2 \
+--parallelmethod "Ctid" \
+--license $licenseContent 
 ```
 
-### 3) Export → S3
+### 3) Oracle (oraodp) → partitioned Parquet to gcs using table only as source and Rowid method as parallelism auto (-2)
 ```bash
-docker run --rm   -e AWS_ACCESS_KEY_ID=AKIA...   -e AWS_SECRET_ACCESS_KEY=****   -e AWS_REGION=eu-west-1   -e FASTBCP_LICENSE_CONTENT="$(cat ./licence.txt)"   fastbcp:latest     --license "${FASTBCP_LICENSE_CONTENT}"     export       --source "postgres://user:*****@db:5432/app"       --query  "SELECT * FROM public.events"       --out    "s3://my-bucket/exports/events_{part}.parquet"       --format parquet --parallel 32
+export licenseContent = $(cat ./FastBCP.lic)
+export gcsbucket = "aetp-gcs-bucket"
+
+// get GCP credentials JSON content from file, then copy to env var
+export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(cat ./gcp-credentials.json)
+
+docker run --rm \
+-e GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS_JSON} \
+fastbcp:latest \
+--connectiontype "oraodp" \
+--server "host.docker.internal:1521/FREEPDB1" \
+--user "TPCH_IN" \
+--password "TPCH_IN" \
+--database "FREEPDB1" \
+--sourceschema "TPCH_IN" \
+--sourcetable "ORDERS" \
+--fileoutput "orders.parquet" \
+--directory "gs://${gcsbucket}/fastbcpoutput/testgs/orders" \
+--parallelmethod "Rowid" \
+--license $licenseContent 
 ```
 
-## Docker Compose
-```yaml
-services:
-  fastbcp:
-    image: fastbcp:latest
-    container_name: fastbcp
-    environment:
-      FASTBCP_LICENSE_CONTENT: ${FASTBCP_LICENSE_CONTENT:-}
-      # AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      # AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      # AWS_REGION: eu-west-1
-    volumes:
-      - ./config:/config
-      - ./data:/data
-    # On Linux, to reach a database listening on the Docker host:
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: ["--help"]
-```
-```bash
-docker compose up --build fastbcp
-```
+
+
 
 ## Performance & networking
-- Place `/data` on fast storage (NVMe) when exporting large datasets.
+- Place `/data` on fast storage (NVMe) when exporting large datasets locally.
 - Tune `--parallel` according to CPU and I/O throughput.
 - To reach a DB on the local host from Linux, add `--add-host=host.docker.internal:host-gateway` (or the `extra_hosts` entry in Compose).
-- For high‑bandwidth object‑store targets (S3/ADLS/GCS), ensure consistent MTU settings end‑to‑end; consider jumbo frames where appropriate.
+- For high‑bandwidth object‑store targets (S3/ADLS/GCS), ensure consistent MTU settings end‑to‑end; consider jumbo frames where appropriate and if possible a dedicated endpoint.
 
 ## Security tips
 - Never commit your license or cloud credentials to source control.
 - Prefer Docker/Compose/Kubernetes **secrets** or environment files (`--env-file`) and managed identities (IAM Role / IRSA / Workload Identity / Managed Identity).
+- FastBCP will try classic method to authenticate to cloud object stores (default profile, IAM Role, Env) if no explicit credentials are provided.
 
 ## Troubleshooting
 - **Exec format error** → ensure the binary is Linux x64 and executable (`chmod +x fastbcp`).
@@ -133,5 +210,5 @@ docker compose up --build fastbcp
 - **DB host not reachable** → on Linux, use `--add-host=host.docker.internal:host-gateway` or the Compose `extra_hosts` equivalent.
 
 ## Notes
-- This image **does not** embed the proprietary binary. You must provide it (trial or licensed).
+- This image **does** embed the proprietary binary. you must provide a valid license (or request trial license) in order to work. **Do not share your private license outside your company**
 - OCI labels are set for traceability (source, vendor, license).
