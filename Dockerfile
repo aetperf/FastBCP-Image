@@ -16,7 +16,7 @@ RUN useradd -m -u ${UID} -s /usr/sbin/nologin ${USER}
 
 # Useful directories
 WORKDIR /work
-RUN mkdir -p /config /data && chown -R ${USER}:${USER} /config /data /work
+RUN mkdir -p /config /data && chown -R ${USER}:${USER} /config /data /work /logs
 
 ######################################################################
 # Copy the FastBCP Linux x64 binary (>= 0.28.0) 
@@ -34,7 +34,7 @@ LABEL org.opencontainers.image.title="FastBCP (CLI) - Runtime Docker Image" \
       org.opencontainers.image.licenses="Proprietary"
 
 # Standard volumes
-VOLUME ["/config", "/data", "/work"]
+VOLUME ["/config", "/data", "/work", "/logs"]
 
 # Default to non-root
 USER ${USER}
