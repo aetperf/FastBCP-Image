@@ -2,9 +2,9 @@
 
 Minimal, production‑ready container image to run **FastBCP** (parallel export CLI). This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **inline** via `--license "<content>"` 
 
-> ⚠️ **Binary required for custom build**  
+> **Binary required for custom build**  
 > The FastBCP binary is **not** distributed in this repository. Request the **Linux x64** build here:  
-> 👉 https://www.arpe.io/get-your-fastbcp-trial/  
+> https://www.arpe.io/get-your-fastbcp-trial/  
 > unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
 ## Table of contents
@@ -106,7 +106,7 @@ fastbcp:latest \
 ```
 
 
-🔐 **Good practice**: prefer `--env-file`, Docker/Compose/Kubernetes secrets, or managed identities for cloud credentials. Avoid leaving the license content in shell history.
+**Good practice**: prefer `--env-file`, Docker/Compose/Kubernetes secrets, or managed identities for cloud credentials. Avoid leaving the license content in shell history.
 
 ## Volumes
 - `/work`   – working directory (container `WORKDIR`)

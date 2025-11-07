@@ -22,24 +22,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
 
-      # Check and download FastBCP binary from S3
+      # Download FastBCP binary from S3
       - name: Download FastBCP binary from S3
         run: |
           VERSION=${{ github.event.inputs.version }}
-          echo "Checking if FastBCP ${VERSION} exists in S3..."
-          if ! aws s3 ls "s3://aetpshared/FastBCP/full/FastBCP-linux-x64-${VERSION}.zip" >/dev/null; then
-            echo "FastBCP version ${VERSION} not found in S3 bucket!"
+          FILE="FastBCP-linux-x64-${VERSION}.zip"
+          S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
+
+          echo "Checking if ${S3_PATH} exists..."
+          if ! aws s3 ls "${S3_PATH}" >/dev/null; then
+            echo "❌ FastBCP version ${VERSION} not found in S3 bucket!"
             exit 1
           fi
 
-          echo "Found version ${VERSION}, downloading..."
-          aws s3 cp "s3://aetpshared/FastBCP/full/FastBCP-linux-x64-${VERSION}.zip" FastBCP.zip
-          mkdir -p ./app
-          unzip FastBCP.zip -d ./app/
+          echo "✅ Found version ${VERSION}, downloading..."
+          aws s3 cp "${S3_PATH}" FastBCP.zip
+          
+          unzip FastBCP.zip -d ./FastBCP_extracted
           rm FastBCP.zip
 
-      - name: Copy settings file
-        run: cp FastBCP_Settings.json ./app/
+          # Move the FastBCP binary to the repo root for the Dockerfile
+          mv ./FastBCP_extracted/FastBCP ./FastBCP
+          chmod +x ./FastBCP
+
+          echo "✅ FastBCP binary ready at ./FastBCP"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
