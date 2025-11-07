@@ -16,7 +16,7 @@ RUN useradd -m -u ${UID} -s /usr/sbin/nologin ${USER}
 
 # Useful directories
 WORKDIR /work
-RUN mkdir -p /config /data && chown -R ${USER}:${USER} /config /data /work /logs
+RUN mkdir -p /config /data /logs && chown -R ${USER}:${USER} /config /data /work /logs
 
 ######################################################################
 # Copy the FastBCP Linux x64 binary (>= 0.28.0) 
