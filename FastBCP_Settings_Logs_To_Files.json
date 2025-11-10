@@ -1,12 +1,26 @@
 {
   "Serilog": {
     "Using": [
+      "Serilog",
       "Serilog.Sinks.Console",
+      "Serilog.Sinks.File",
+      "Serilog.Sinks.Map",
       "Serilog.Enrichers.Environment",
       "Serilog.Enrichers.Thread",
       "Serilog.Enrichers.Process",
-      "Serilog.Enrichers.Context"
+      "Serilog.Enrichers.Context",
+      "Serilog.Formatting.Compact"
     ],
+    "MinimumLevel": "Information",
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithProcessId",
+      "WithThreadId"
+    ],
+    "Properties": {
+      "Application": "FastBCP"
+    },
     "WriteTo": [
       {
         "Name": "Console",
@@ -17,29 +31,29 @@
         }
       },
       {
-        "Name": "File",
+        "Name": "Map",
         "Args": {
-          "path": "/logs/FastBCP_logs.json",
-          "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
-          "fileSizeLimitBytes": 52428800,
-          "rollOnFileSizeLimit": true,
-          "retainedFileCountLimit": 4,
-          "rollingInterval": "Infinite",
-          "buffered": false,
-          "shared": false,
-          "encoding": "utf-8",
-          "restrictedToMinimumLevel": "Information"
+          "keyPropertyName": "runid",
+          "defaultKey": "no-runid",
+          "to": [
+            {
+              "Name": "File",
+              "Args": {
+                "path": "/logs/{LogTimestamp}-{runid}-{traceid}.json",
+                "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
+                "fileSizeLimitBytes": 102400,
+                "rollOnFileSizeLimit": true,
+                "retainedFileCountLimit": 4,
+                "rollingInterval": "Infinite",
+                "buffered": false,
+                "shared": false,
+                "encoding": "utf-8",
+                "restrictedToMinimumLevel": "Information"
+              }
+            }
+          ]
         }
       }
-    ],
-    "Enrich": [
-      "FromLogContext",
-      "WithMachineName",
-      "WithProcessId",
-      "WithThreadId"
-    ],
-    "Properties": {
-      "Application": "FastBCP"
-    }
+    ]
   }
 }

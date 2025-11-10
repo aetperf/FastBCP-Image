@@ -70,13 +70,13 @@ the docker image use as entrypoint the fastbcp binary, so you can run it directl
 You can get the **command line help** using this 
 
 ```bash
-docker run --rm fastbcp:latest
+docker run --rm aetp/fastbcp:latest
 ```
 
 You can get the **version** using this 
 
 ```bash
-docker run --rm fastbcp:latest --version
+docker run --rm aetp/fastbcp:latest --version
 ```
 
 ## Samples
@@ -85,11 +85,11 @@ docker run --rm fastbcp:latest --version
 
 ```bash  
 export licenseContent = cat ./FastBCP.lic
-docker run --rm \
+docker run --rm  \
 -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
 -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
 -e AWS_REGION=${AWS_REGION} \
-fastbcp:latest \
+aetp/fastbcp:latest \
 --connectiontype "mssql" \
 --server "host.docker.internal,1433" \
 --user "FastUser" \
@@ -112,6 +112,8 @@ fastbcp:latest \
 - `/work`   – working directory (container `WORKDIR`)
 - `/config` – optional configuration directory (e.g. to store `FastBCP_Settings.json` for custom logging)
 - `/data`   – target source/exports
+- `/logs`   – logs directory (ensure that `FastBCP_Settings.json` is configured to write logs to this directory)
+
 
 ## Other Examples
 
@@ -121,7 +123,7 @@ fastbcp:latest \
 ```bash
 export licenseContent = cat ./FastBCP.lic
 docker run --rm \
-fastbcp:latest \
+aetp/fastbcp:latest \
 --connectiontype "mssql" \
 --server "host.docker.internal,1433" \
 --user "FastUser" \
@@ -145,11 +147,11 @@ fastbcp:latest \
 export licenseContent = $(cat ./FastBCP.lic)
 export adlscontainer = "aetpadlseu"
 
-docker run --rm \
+docker run --rm  \
 -e AZURE_CLIENT_ID=${AZURE_CLIENT_ID} \
 -e AZURE_TENANT_ID=${AZURE_TENANT_ID} \
 -e AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET} \
-fastbcp:latest \
+aetp/fastbcp:latest \
 --connectiontype "pgcopy" \
 --server "host.docker.internal:15432" \
 --user "FastUser" \
@@ -175,7 +177,7 @@ export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(cat ./gcp-credentials.json)
 
 docker run --rm \
 -e GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS_JSON} \
-fastbcp:latest \
+aetp/fastbcp:latest \
 --connectiontype "oraodp" \
 --server "host.docker.internal:1521/FREEPDB1" \
 --user "TPCH_IN" \
@@ -186,9 +188,74 @@ fastbcp:latest \
 --fileoutput "orders.parquet" \
 --directory "gs://${gcsbucket}/fastbcpoutput/testgs/orders" \
 --parallelmethod "Rowid" \
+--paralleldegree -2 \
 --license $licenseContent 
 ```
 
+## Configuring FastBCP Logging with Custom Settings
+
+FastBCP supports **custom logging configuration** via the `FastBCP_Settings.json` file mounted or copied into the `/config` directory. You can create multiple versions of this file depending on your needs:
+
+* **Console only, no colors:** `FastBCP_Settings_Consoles_Only_Without_Colors.json`
+
+  * Logs are written to console only.
+  * Useful for CI/CD pipelines or when no log files are needed.
+
+* **Logs to files:** `FastBCP_Settings_Logs_To_Files.json`
+
+  * Logs are written to `/logs` in JSON format (e.g., CompactJsonFormatter).
+  * Supports rotation policies, file size limits, and retained file count.
+  * Example configuration snippet for 100 KB per file, max 4 files:
+
+```json
+{
+  "Serilog": {
+    "WriteTo": [
+      {
+        "Name": "File",
+        "Args": {
+          "path": "/logs/return.json",
+          "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
+          "fileSizeLimitBytes": 102400,
+          "rollOnFileSizeLimit": true,
+          "retainedFileCountLimit": 4,
+          "rollingInterval": "Infinite"
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithProcessId",
+      "WithThreadId"
+    ],
+    "Properties": {
+      "Application": "FastBCP"
+    }
+  }
+}
+```
+
+### Using a custom settings file
+
+Mount your custom settings file into the container:
+
+```bash
+docker run --rm \
+  -v fastbcp-config-vol:/config \
+  aetp/fastbcp:latest \
+  --settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
+  --connectiontype "mssql" \
+  --server "host.docker.internal,1433" \
+  --user "FastUser" \
+  --password "FastPassword" \
+  --database "tpch_test" \
+  --query "SELECT * FROM dbo.orders" \
+  --fileoutput "orders.csv" \
+  --directory "/data"
+```
+
+> The `--settingsfile` argument tells FastBCP which JSON configuration to use. Without it, the container defaults to the internal settings.
 
 
 
