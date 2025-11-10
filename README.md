@@ -60,7 +60,7 @@ docker pull aetp/fastbcp:latest
 ```
 or 
 ```bash
-docker pull aetp/fastbcp:v0.28.1
+docker pull aetp/fastbcp:v0.28.3
 ```
 
 # Usage
