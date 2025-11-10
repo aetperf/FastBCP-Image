@@ -244,18 +244,15 @@ It writes:
       {
         "Name": "Map",
         "Args": {
-          "keyPropertyName": "TraceId",
-          "defaultKey": "no-trace",
           "to": [
             {
               "Name": "File",
               "Args": {
-                "path": "/logs/log-{{LogTimestamp}}-{{TraceId}}.json",
+                "path": "/logs/{logdate}/{sourcedatabase}/log-{filename}-{LogTimestamp}-{TraceId}.json",
                 "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
                 "rollingInterval": "Infinite",
                 "shared": false,
-                "encoding": "utf-8",
-                "retainedFileCountLimit": 100
+                "encoding": "utf-8"
               }
             }
           ]
@@ -282,11 +279,11 @@ Important notes:
 
 ---
 
-### Available Variables for Path or Filename Formatting
+### Available Tokens for Path or Filename Formatting
 
 You can use the following placeholders to dynamically generate log file names or directories:
 
-| Variable Name      | Description                                  |
+| Token Name      | Description                                  |
 | ------------------ | -------------------------------------------- |
 | `{logdate}`        | Current date in `yyyy-MM-dd` format          |
 | `{logtimestamp}`   | Full timestamp of the log entry              |
