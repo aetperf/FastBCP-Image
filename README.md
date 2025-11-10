@@ -194,32 +194,68 @@ aetp/fastbcp:latest \
 
 ## Configuring FastBCP Logging with Custom Settings
 
-FastBCP supports **custom logging configuration** via the `FastBCP_Settings.json` file mounted or copied into the `/config` directory. You can create multiple versions of this file depending on your needs:
+FastBCP supports custom logging configuration through an external **Serilog settings file** in JSON format.
+This allows you to control how and where logs are written — to the console, to files, or dynamically per run.
 
-* **Console only, no colors:** `FastBCP_Settings_Consoles_Only_Without_Colors.json`
+Custom settings files must be mounted into the container under the `/config` directory.
 
-  * Logs are written to console only.
-  * Useful for CI/CD pipelines or when no log files are needed.
+---
 
-* **Logs to files:** `FastBCP_Settings_Logs_To_Files.json`
+### Example: Logging to Console, Airflow, and Dynamic Log Files
 
-  * Logs are written to `/logs` in JSON format (e.g., CompactJsonFormatter).
-  * Supports rotation policies, file size limits, and retained file count.
-  * Example configuration snippet for 100 KB per file, max 4 files:
+The following configuration is recommended for most production or Airflow environments.
+It writes:
+
+* Logs to the console for real-time visibility
+* Run summary logs to `/airflow/xcom/return.json` for Airflow integration
+* Per-run logs under `/logs`, automatically named with `{LogTimestamp}` and `{TraceId}`
 
 ```json
 {
   "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.File",
+      "Serilog.Enrichers.Environment",
+      "Serilog.Enrichers.Thread",
+      "Serilog.Enrichers.Process",
+      "Serilog.Enrichers.Context",
+      "Serilog.Formatting.Compact"
+    ],
     "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "{Timestamp:yyyy-MM-ddTHH:mm:ss.fff zzz} -|- {Application} -|- {runid} -|- {Level:u12} -|- {fulltargetname} -|- {Message}{NewLine}{Exception}",
+          "theme": "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console",
+          "applyThemeToRedirectedOutput": false
+        }
+      },
       {
         "Name": "File",
         "Args": {
-          "path": "/logs/return.json",
-          "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
-          "fileSizeLimitBytes": 102400,
-          "rollOnFileSizeLimit": true,
-          "retainedFileCountLimit": 4,
-          "rollingInterval": "Infinite"
+          "path": "/airflow/xcom/return.json",
+          "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact"
+        }
+      },
+      {
+        "Name": "Map",
+        "Args": {
+          "keyPropertyName": "TraceId",
+          "defaultKey": "no-trace",
+          "to": [
+            {
+              "Name": "File",
+              "Args": {
+                "path": "/logs/log-{{LogTimestamp}}-{{TraceId}}.json",
+                "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
+                "rollingInterval": "Infinite",
+                "shared": false,
+                "encoding": "utf-8",
+                "retainedFileCountLimit": 100
+              }
+            }
+          ]
         }
       }
     ],
@@ -236,13 +272,48 @@ FastBCP supports **custom logging configuration** via the `FastBCP_Settings.json
 }
 ```
 
-### Using a custom settings file
+Important notes:
 
-Mount your custom settings file into the container:
+* If a target directory (such as `/logs` or `/airflow/xcom`) does not exist, FastBCP automatically creates it.
+* The file `/airflow/xcom/return.json` is designed to provide run summaries compatible with Airflow’s XCom mechanism.
+
+---
+
+### Available Variables for Path or Filename Formatting
+
+You can use the following placeholders to dynamically generate log file names or directories:
+
+| Variable Name      | Description                                  |
+| ------------------ | -------------------------------------------- |
+| `{logdate}`        | Current date in `yyyy-MM-dd` format          |
+| `{logtimestamp}`   | Full timestamp of the log entry              |
+| `{sourcedatabase}` | Name of the source database                  |
+| `{sourceschema}`   | Name of the source schema                    |
+| `{sourcetable}`    | Name of the source table                     |
+| `{filename}`       | Name of the file being processed             |
+| `{runid}`          | Run identifier provided in the command line  |
+| `{traceid}`        | Unique trace identifier generated at runtime |
+
+---
+
+### Mounting a Custom Settings File
+
+The Docker image declares several volumes to organize data and configuration:
+
+```dockerfile
+VOLUME ["/config", "/data", "/work", "/logs"]
+```
+
+Your Serilog configuration file (for example, `FastBCP_Settings_Logs_To_Files.json`) must be placed in `/config`,
+either by mounting a local directory or by using a Docker named volume.
+
+Example:
 
 ```bash
 docker run --rm \
-  -v fastbcp-config-vol:/config \
+  -v D:\FastBCP\config:/config \
+  -v fastbcp-data:/data \
+  -v fastbcp-logs:/logs \
   aetp/fastbcp:latest \
   --settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
   --connectiontype "mssql" \
@@ -252,10 +323,25 @@ docker run --rm \
   --database "tpch_test" \
   --query "SELECT * FROM dbo.orders" \
   --fileoutput "orders.csv" \
-  --directory "/data"
+  --directory "/data" \
+  --paralleldegree 12 \
+  --parallelmethod "Ntile" \
+  --distributekeycolumn "o_orderkey" \
+  --merge false 
 ```
 
-> The `--settingsfile` argument tells FastBCP which JSON configuration to use. Without it, the container defaults to the internal settings.
+If the `--settingsfile` argument is not provided, FastBCP will use its built-in default logging configuration.
+
+---
+
+### Volume Configuration and Access Modes
+
+| Volume Path | Description                                                         | Access Mode           | Typical Usage                                   |
+| ----------- | ------------------------------------------------------------------- | --------------------- | ----------------------------------------------- |
+| `/config`   | Contains user-provided configuration files (e.g., Serilog settings) | Read-Only / Read-Many | Shared across multiple containers; not modified |
+| `/data`     | Input/output data directory                                         | Read-Many/Write-Many       | Stores imported or exported data files          |
+| `/work`     | Temporary working directory                                         | Read-Many/Write-Many       | Used internally for temporary processing        |
+| `/logs`     | Log output directory (per-run or aggregated logs)                   | Read-Many/Write-Many       | Stores runtime and execution logs               |
 
 
 
