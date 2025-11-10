@@ -194,10 +194,13 @@ aetp/fastbcp:latest \
 
 ## Configuring FastBCP Logging with Custom Settings
 
-FastBCP supports custom logging configuration through an external **Serilog settings file** in JSON format.
-This allows you to control how and where logs are written — to the console, to files, or dynamically per run.
+*Available starting from version **v0.28.3***
 
-Custom settings files must be mounted into the container under the `/config` directory.
+FastBCP supports **custom logging configuration** through an external Serilog settings file in JSON format.
+This allows you to control **how and where logs are written** — to the console, to files, or dynamically per run.
+
+Custom settings files must be **mounted into the container** under the `/config` directory.
+
 
 ---
 
