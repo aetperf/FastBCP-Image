@@ -36,7 +36,7 @@
                 "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
                 "rollingInterval": "Infinite",
                 "shared": false,
-                "encoding": "utf-8"
+                "encoding": "utf-8"              
               }
             }
           ]
