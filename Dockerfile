@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM debian:bookworm-slim
+FROM dhi.io/debian-base:trixie
 
 # Common runtime packages for self-contained .NET binaries (ICU/SSL/zlib/Kerberos), CA, tz, curl
 RUN set -eux; \
@@ -16,14 +16,11 @@ RUN useradd -m -u ${UID} -s /usr/sbin/nologin ${USER}
 
 # Useful directories
 WORKDIR /work
-RUN mkdir -p /config /data /logs /airflow/xcom && chown -R ${USER}:${USER} /config /data /work /logs /airflow/xcom
+RUN mkdir -p /config /data /logs /airflow/xcom \
+ && chown -R ${USER}:${USER} /config /data /work /logs /airflow/xcom
 
-######################################################################
-# Copy the FastBCP Linux x64 binary (>= 0.28.0) 
-# Place it at the root of the repo before building.
-######################################################################
+# Copy the FastBCP Linux x64 binary (downloaded by CI at repo root)
 COPY --chown=${USER}:${USER} FastBCP /usr/local/bin/FastBCP
-
 RUN chmod 0755 /usr/local/bin/FastBCP
 
 # OCI Labels
@@ -33,12 +30,7 @@ LABEL org.opencontainers.image.title="FastBCP (CLI) - Runtime Docker Image" \
       org.opencontainers.image.source="https://github.com/aetperf/FastBCP-Image" \
       org.opencontainers.image.licenses="Proprietary"
 
-# Standard volumes
 VOLUME ["/config", "/data", "/work", "/logs"]
 
-# Default to non-root
 USER ${USER}
-
-# ENTRYPOINT directly on the FastBCP binary
 ENTRYPOINT ["/usr/local/bin/FastBCP"]
-

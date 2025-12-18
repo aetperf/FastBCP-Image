@@ -12,9 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # Configure AWS credentials using your custom secret names
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -22,47 +21,51 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
 
-      # Download FastBCP binary from S3
       - name: Download FastBCP binary from S3
         run: |
-          VERSION=${{ github.event.inputs.version }}
+          set -eux
+          VERSION='${{ github.event.inputs.version }}'
           FILE="FastBCP-linux-x64-${VERSION}.zip"
           S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
 
           echo "Checking if ${S3_PATH} exists..."
-          if ! aws s3 ls "${S3_PATH}" >/dev/null; then
-            echo "❌ FastBCP version ${VERSION} not found in S3 bucket!"
-            exit 1
-          fi
+          aws s3 ls "${S3_PATH}" >/dev/null
 
-          echo "✅ Found version ${VERSION}, downloading..."
+          echo "Downloading ${FILE}..."
           aws s3 cp "${S3_PATH}" FastBCP.zip
-          
+
           unzip FastBCP.zip -d ./FastBCP_extracted
           rm FastBCP.zip
 
-          # Move the FastBCP binary to the repo root for the Dockerfile
           mv ./FastBCP_extracted/FastBCP ./FastBCP
           chmod +x ./FastBCP
 
           echo "✅ FastBCP binary ready at ./FastBCP"
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+      - name: Log in to Docker (DHI access)
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
         run: |
-          VERSION=${{ github.event.inputs.version }}
+          set -eux
+          VERSION='${{ github.event.inputs.version }}'
           echo "Building Docker image for version ${VERSION}"
           docker build --no-cache \
             -t aetp/fastbcp:latest \
             -t aetp/fastbcp:${VERSION} .
 
+      - name: Smoke test
+        run: |
+          set -eux
+          docker run --rm aetp/fastbcp:latest --help >/dev/null
+          echo "✅ FastBCP runs"
+
       - name: Push Docker image
         run: |
-          VERSION=${{ github.event.inputs.version }}
+          set -eux
+          VERSION='${{ github.event.inputs.version }}'
           docker push aetp/fastbcp:latest
           docker push aetp/fastbcp:${VERSION}

@@ -7,19 +7,23 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 > https://www.arpe.io/get-your-fastbcp-trial/  
 > unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
+
 ## Table of contents
-- [Prerequisites](#prerequisites)
-- [Get the binary](#get-the-binary)
-- [Build](#build)
-- [Run FastBCP](#run-fastbcp)
-- [License (≥ 0.28.0)](#license--0280)
-- [Volumes](#volumes)
-- [Examples](#examples)
-- [Docker Compose](#docker-compose)
-- [Performance & networking](#performance--networking)
-- [Security tips](#security-tips)
-- [Troubleshooting](#troubleshooting)
-- [Notes](#notes)
+
+* [Prerequisites](#prerequisites)
+* [Get the binary](#get-the-binary-for-build-only)
+* [Build](#build)
+* [Run FastBCP](#run-fastbcp)
+* [License](#license)
+* [Prebuilt image on DockerHub](#prebuilt-image-on-dockerhub)
+* [Usage](#usage)
+* [Samples](#samples)
+* [Volumes](#volumes)
+* [Configuring FastBCP Logging](#configuring-fastbcp-logging-with-custom-settings)
+* [Performance & networking](#performance--networking)
+* [Security tips](#security-tips)
+* [Troubleshooting](#troubleshooting)
+* [Notes](#notes)
 
 ---
 
