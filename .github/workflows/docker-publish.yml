@@ -45,8 +45,8 @@ jobs:
 
       - name: Log in to DHI registry (dhi.io)
         run: |
-          echo "${{ secrets.DHI_TOKEN }}" | docker login dhi.io \
-            -u "${{ secrets.DHI_USERNAME }}" --password-stdin
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login dhi.io \
+            -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       # Optionnel mais très utile pour debug
       # - name: Test pull Debian HDI
