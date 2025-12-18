@@ -63,7 +63,7 @@ jobs:
       - name: Smoke test
         run: |
           set -eux
-          docker run --rm aetp/fastbcp:latest --help >/dev/null
+          docker run --rm aetp/fastbcp:latest >/dev/null
           echo "✅ FastBCP runs"
 
       - name: Push Docker image
