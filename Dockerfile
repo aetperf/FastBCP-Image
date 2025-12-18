@@ -6,8 +6,10 @@ RUN set -eux; \
     apt-get update; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates tzdata curl \
-      libicu72 libssl3 zlib1g libkrb5-3 \
+      libicu-dev \
+      libssl3 zlib1g libkrb5-3 \
     ; rm -rf /var/lib/apt/lists/*
+
 
 # Non-root user
 ARG USER=fastbcp
