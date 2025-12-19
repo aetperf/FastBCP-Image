@@ -8,7 +8,7 @@ RUN set -eux; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates tzdata curl \
       passwd \
-      libicu-dev \
+      libicu76 \
       libssl3 zlib1g libkrb5-3 \
     ; rm -rf /var/lib/apt/lists/*
 
