@@ -4,7 +4,7 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 
 > **Binary required for custom build**  
 > The FastBCP binary is **not** distributed in this repository. Request the **Linux x64** build here:  
-> https://www.arpe.io/get-your-fastbcp-trial/  
+> https://fastbcp.arpe.io/start/
 > unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
 
