@@ -33,7 +33,7 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 - Optional: `FastBCP_Settings.json` to mount/copy into `/config` for custom logging settings
 
 ## Get the binary (for build only)
-1. Request a trial: https://www.arpe.io/get-your-fastbcp-trial/
+1. Request a trial: https://fastbcp.arpe.io/start/
 2. Rename the downloaded file to `fastbcp` and ensure it is executable if testing locally:
    ```bash
    chmod +x fastbcp
