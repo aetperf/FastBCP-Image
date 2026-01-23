@@ -69,7 +69,7 @@ docker pull aetp/fastbcp:v0.28.3
 
 # Usage
 
-the docker image use as entrypoint the fastbcp binary, so you can run it directly with parameters like defined in the [FastBCP documentation](https://aetperf.github.io/FastBCP-Documentation/).
+the docker image use as entrypoint the fastbcp binary, so you can run it directly with parameters like defined in the [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/).
 
 You can get the **command line help** using this 
 
