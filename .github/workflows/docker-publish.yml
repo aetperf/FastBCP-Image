@@ -41,22 +41,84 @@ jobs:
       - name: Get versions to build
         id: versions
         run: |
+          # Get all existing tags from Docker Hub
+          ALL_VERSIONS=$(curl -s "https://hub.docker.com/v2/repositories/aetp/fastbcp/tags/?page_size=100" | \
+            jq -r '.results[].name' | grep '^v[0-9]' | sort -V)
+          
+          # Find the latest version of each minor branch (e.g., latest 0.28.x, 0.27.x, etc.)
+          LATEST_PER_MINOR=$(echo "$ALL_VERSIONS" | \
+            sed 's/v\([0-9]*\.[0-9]*\)\.[0-9]*/\1/' | \
+            uniq | \
+            while read minor; do
+              echo "$ALL_VERSIONS" | grep "^v${minor}\." | tail -n 1
+            done | tr '\n' ' ')
+          
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Scheduled build: fetching existing tags from Docker Hub..."
-            VERSIONS=$(curl -s "https://hub.docker.com/v2/repositories/aetp/fastbcp/tags/?page_size=100" | \
-              jq -r '.results[].name' | grep '^v[0-9]' | sort -V | tr '\n' ' ')
-            echo "Versions to rebuild: $VERSIONS"
-            echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+            echo "Scheduled build: rebuilding latest of each minor branch"
+            echo "Versions to rebuild: $LATEST_PER_MINOR"
+            echo "versions=$LATEST_PER_MINOR" >> $GITHUB_OUTPUT
+            echo "new_version=" >> $GITHUB_OUTPUT
           else
-            echo "Manual build with single version"
-            echo "versions=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "Manual build: building new version + latest of each minor branch"
+            NEW_VERSION="${{ github.event.inputs.version }}"
+            
+            echo "New version: $NEW_VERSION"
+            echo "Latest versions per minor branch to rebuild: $LATEST_PER_MINOR"
+            
+            echo "versions=$LATEST_PER_MINOR" >> $GITHUB_OUTPUT
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Build and push all versions
         run: |
+          NEW_VERSION="${{ steps.versions.outputs.new_version }}"
           VERSIONS="${{ steps.versions.outputs.versions }}"
           
+          # Build the new version first (manual builds only)
+          if [ -n "$NEW_VERSION" ]; then
+            echo "================================================"
+            echo "Building NEW version: $NEW_VERSION (will be tagged as latest)"
+            echo "================================================"
+            
+            FILE="FastBCP-linux-x64-${NEW_VERSION}.zip"
+            S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
+            
+            echo "Checking if ${S3_PATH} exists..."
+            aws s3 ls "${S3_PATH}" >/dev/null
+            
+            echo "Downloading ${FILE}..."
+            aws s3 cp "${S3_PATH}" FastBCP.zip
+            
+            unzip -o FastBCP.zip -d ./FastBCP_extracted
+            rm FastBCP.zip
+            
+            mv -f ./FastBCP_extracted/FastBCP ./FastBCP
+            chmod +x ./FastBCP
+            
+            # Build new version with 'latest' tag
+            docker buildx build \
+              --push \
+              --platform linux/amd64 \
+              --tag aetp/fastbcp:${NEW_VERSION} \
+              --tag aetp/fastbcp:latest \
+              --provenance=true \
+              --sbom=true \
+              --no-cache \
+              .
+            
+            echo "✅ Successfully built and pushed: ${NEW_VERSION} (+ latest)"
+            
+            rm -rf ./FastBCP ./FastBCP_extracted
+          fi
+          
+          # Build/rebuild other versions (latest per minor branch or all versions for cron)
           for VERSION in $VERSIONS; do
+            # Skip if this is the new version we just built
+            if [ "$VERSION" = "$NEW_VERSION" ]; then
+              echo "Skipping $VERSION (already built as new version)"
+              continue
+            fi
+            
             echo "================================================"
             echo "Building version: $VERSION"
             echo "================================================"
@@ -80,33 +142,24 @@ jobs:
             mv -f ./FastBCP_extracted/FastBCP ./FastBCP
             chmod +x ./FastBCP
             
-            # Determine tags to push
-            if [ "${{ github.event_name }}" = "schedule" ]; then
-              # Scheduled: rebuild existing tag only
-              TAG_ARGS="--tag aetp/fastbcp:${VERSION}"
-            else
-              # Manual: tag as version + latest
-              TAG_ARGS="--tag aetp/fastbcp:${VERSION} --tag aetp/fastbcp:latest"
-            fi
-            
-            # Build and push
+            # Build and push (version tag only, no 'latest')
             docker buildx build \
               --push \
               --platform linux/amd64 \
-              $TAG_ARGS \
+              --tag aetp/fastbcp:${VERSION} \
               --provenance=true \
               --sbom=true \
               --no-cache \
               .
             
-            echo "✅ Successfully built and pushed: $TAG_ARGS"
+            echo "✅ Successfully built and pushed: ${VERSION}"
             
             # Cleanup
             rm -rf ./FastBCP ./FastBCP_extracted
           done
           
           # For scheduled builds, also update latest with the most recent version
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] && [ -n "$VERSIONS" ]; then
             LATEST_VERSION=$(echo "$VERSIONS" | tr ' ' '\n' | tail -n 1)
             echo "Tagging latest with ${LATEST_VERSION}..."
             docker buildx imagetools create \
