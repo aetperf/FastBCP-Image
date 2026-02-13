@@ -80,7 +80,9 @@ You can use a prebuilt image from DockerHub that already includes the FastBCP bi
 
 ### Automatic updates
 - **New releases:** Images are automatically built when new FastBCP versions are released
-- **Security updates:** All version tags are automatically rebuilt weekly (every Monday) to include the latest base image and security patches
+- **Security updates:** The **latest version of each minor branch** (e.g., latest v0.27.x, v0.28.x, v0.29.x) is automatically rebuilt weekly (every Monday) with the latest base image and security patches
+  - This ensures that all actively used versions remain secure without breaking compatibility
+  - Example: If you use `v0.28.8` (latest of 0.28.x branch), it gets security updates even after `v0.29.0` is released
 
 ### Pull the image
 
@@ -420,5 +422,5 @@ If the `--settingsfile` argument is not provided, FastBCP will use its built-in 
 ## Notes
 - This image **embeds the proprietary FastBCP binary**. You must provide a valid license (or request a trial license) for the tool to work. **Do not share your private license outside your organization.**
 - OCI labels are set for traceability (source, vendor, license).
-- Images are automatically updated weekly with the latest security patches from the base image.
+- **Security maintenance:** The latest version of each minor branch (e.g., v0.27.x, v0.28.x, v0.29.x) is automatically rebuilt weekly with security patches, ensuring long-term security without forcing upgrades to newer minor versions.
 - For questions or support, visit [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/) or contact [ARPE](https://www.arpe.io/).
