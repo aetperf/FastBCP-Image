@@ -4,7 +4,7 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 
 > **Binary required for custom build**  
 > The FastBCP binary is **not** distributed in this repository. Request the **Linux x64** build here:  
-> https://www.arpe.io/get-your-fastbcp-trial/  
+> https://fastbcp.arpe.io/start/
 > unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
 
@@ -33,7 +33,7 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 - Optional: `FastBCP_Settings.json` to mount/copy into `/config` for custom logging settings
 
 ## Get the binary (for build only)
-1. Request a trial: https://www.arpe.io/get-your-fastbcp-trial/
+1. Request a trial: https://fastbcp.arpe.io/start/
 2. Rename the downloaded file to `fastbcp` and ensure it is executable if testing locally:
    ```bash
    chmod +x fastbcp
@@ -69,7 +69,7 @@ docker pull aetp/fastbcp:v0.28.3
 
 # Usage
 
-the docker image use as entrypoint the fastbcp binary, so you can run it directly with parameters like defined in the [FastBCP documentation](https://aetperf.github.io/FastBCP-Documentation/).
+the docker image use as entrypoint the fastbcp binary, so you can run it directly with parameters like defined in the [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/).
 
 You can get the **command line help** using this 
 
