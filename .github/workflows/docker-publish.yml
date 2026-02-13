@@ -6,6 +6,9 @@ on:
       version:
         description: 'Version tag from FastBCP (ex: v0.28.0)'
         required: true
+  schedule:
+    # Rebuild every Monday at 3 AM UTC to get latest base image updates
+    - cron: '0 3 * * 1'
 
 jobs:
   build-and-push:
@@ -21,27 +24,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
 
-      - name: Download FastBCP binary from S3
-        run: |
-          set -eux
-          VERSION='${{ github.event.inputs.version }}'
-          FILE="FastBCP-linux-x64-${VERSION}.zip"
-          S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
-
-          echo "Checking if ${S3_PATH} exists..."
-          aws s3 ls "${S3_PATH}" >/dev/null
-
-          echo "Downloading ${FILE}..."
-          aws s3 cp "${S3_PATH}" FastBCP.zip
-
-          unzip FastBCP.zip -d ./FastBCP_extracted
-          rm FastBCP.zip
-
-          mv ./FastBCP_extracted/FastBCP ./FastBCP
-          chmod +x ./FastBCP
-
-          echo "✅ FastBCP binary ready at ./FastBCP"
-
       - name: Log in to Docker Hub (push)
         uses: docker/login-action@v3
         with:
@@ -56,17 +38,81 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push (with SBOM + provenance)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            aetp/fastbcp:latest
-            aetp/fastbcp:${{ github.event.inputs.version }}
-          no-cache: true
-          sbom: true
-          provenance: true
+      - name: Get versions to build
+        id: versions
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Scheduled build: fetching existing tags from Docker Hub..."
+            VERSIONS=$(curl -s "https://hub.docker.com/v2/repositories/aetp/fastbcp/tags/?page_size=100" | \
+              jq -r '.results[].name' | grep '^v[0-9]' | sort -V | tr '\n' ' ')
+            echo "Versions to rebuild: $VERSIONS"
+            echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+          else
+            echo "Manual build with single version"
+            echo "versions=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push all versions
+        run: |
+          VERSIONS="${{ steps.versions.outputs.versions }}"
+          
+          for VERSION in $VERSIONS; do
+            echo "================================================"
+            echo "Building version: $VERSION"
+            echo "================================================"
+            
+            # Download FastBCP binary
+            FILE="FastBCP-linux-x64-${VERSION}.zip"
+            S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
+            
+            echo "Checking if ${S3_PATH} exists..."
+            if ! aws s3 ls "${S3_PATH}" >/dev/null 2>&1; then
+              echo "⚠️  Warning: ${S3_PATH} not found, skipping..."
+              continue
+            fi
+            
+            echo "Downloading ${FILE}..."
+            aws s3 cp "${S3_PATH}" FastBCP.zip
+            
+            unzip -o FastBCP.zip -d ./FastBCP_extracted
+            rm FastBCP.zip
+            
+            mv -f ./FastBCP_extracted/FastBCP ./FastBCP
+            chmod +x ./FastBCP
+            
+            # Determine tags to push
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              # Scheduled: rebuild existing tag only
+              TAG_ARGS="--tag aetp/fastbcp:${VERSION}"
+            else
+              # Manual: tag as version + latest
+              TAG_ARGS="--tag aetp/fastbcp:${VERSION} --tag aetp/fastbcp:latest"
+            fi
+            
+            # Build and push
+            docker buildx build \
+              --push \
+              --platform linux/amd64 \
+              $TAG_ARGS \
+              --provenance=true \
+              --sbom=true \
+              --no-cache \
+              .
+            
+            echo "✅ Successfully built and pushed: $TAG_ARGS"
+            
+            # Cleanup
+            rm -rf ./FastBCP ./FastBCP_extracted
+          done
+          
+          # For scheduled builds, also update latest with the most recent version
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            LATEST_VERSION=$(echo "$VERSIONS" | tr ' ' '\n' | tail -n 1)
+            echo "Tagging latest with ${LATEST_VERSION}..."
+            docker buildx imagetools create \
+              aetp/fastbcp:${LATEST_VERSION} \
+              --tag aetp/fastbcp:latest
+          fi
 
       - name: Smoke test
         run: |
