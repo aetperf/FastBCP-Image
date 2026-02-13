@@ -74,48 +74,11 @@ jobs:
           NEW_VERSION="${{ steps.versions.outputs.new_version }}"
           VERSIONS="${{ steps.versions.outputs.versions }}"
           
-          # Build the new version first (manual builds only)
-          if [ -n "$NEW_VERSION" ]; then
-            echo "================================================"
-            echo "Building NEW version: $NEW_VERSION (will be tagged as latest)"
-            echo "================================================"
-            
-            FILE="FastBCP-linux-x64-${NEW_VERSION}.zip"
-            S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
-            
-            echo "Checking if ${S3_PATH} exists..."
-            aws s3 ls "${S3_PATH}" >/dev/null
-            
-            echo "Downloading ${FILE}..."
-            aws s3 cp "${S3_PATH}" FastBCP.zip
-            
-            unzip -o FastBCP.zip -d ./FastBCP_extracted
-            rm FastBCP.zip
-            
-            mv -f ./FastBCP_extracted/FastBCP ./FastBCP
-            chmod +x ./FastBCP
-            
-            # Build new version with 'latest' tag
-            docker buildx build \
-              --push \
-              --platform linux/amd64 \
-              --tag aetp/fastbcp:${NEW_VERSION} \
-              --tag aetp/fastbcp:latest \
-              --provenance=true \
-              --sbom=true \
-              --no-cache \
-              .
-            
-            echo "✅ Successfully built and pushed: ${NEW_VERSION} (+ latest)"
-            
-            rm -rf ./FastBCP ./FastBCP_extracted
-          fi
-          
-          # Build/rebuild other versions (latest per minor branch or all versions for cron)
+          # Build/rebuild existing versions first (oldest to newest)
           for VERSION in $VERSIONS; do
-            # Skip if this is the new version we just built
+            # Skip if this is the new version (will be built last)
             if [ "$VERSION" = "$NEW_VERSION" ]; then
-              echo "Skipping $VERSION (already built as new version)"
+              echo "Skipping $VERSION (will be built as new version at the end)"
               continue
             fi
             
@@ -158,7 +121,44 @@ jobs:
             rm -rf ./FastBCP ./FastBCP_extracted
           done
           
-          # For scheduled builds, also update latest with the most recent version
+          # Build the new version last (manual builds only)
+          if [ -n "$NEW_VERSION" ]; then
+            echo "================================================"
+            echo "Building NEW version: $NEW_VERSION (will be tagged as latest)"
+            echo "================================================"
+            
+            FILE="FastBCP-linux-x64-${NEW_VERSION}.zip"
+            S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
+            
+            echo "Checking if ${S3_PATH} exists..."
+            aws s3 ls "${S3_PATH}" >/dev/null
+            
+            echo "Downloading ${FILE}..."
+            aws s3 cp "${S3_PATH}" FastBCP.zip
+            
+            unzip -o FastBCP.zip -d ./FastBCP_extracted
+            rm FastBCP.zip
+            
+            mv -f ./FastBCP_extracted/FastBCP ./FastBCP
+            chmod +x ./FastBCP
+            
+            # Build new version with 'latest' tag
+            docker buildx build \
+              --push \
+              --platform linux/amd64 \
+              --tag aetp/fastbcp:${NEW_VERSION} \
+              --tag aetp/fastbcp:latest \
+              --provenance=true \
+              --sbom=true \
+              --no-cache \
+              .
+            
+            echo "✅ Successfully built and pushed: ${NEW_VERSION} (+ latest)"
+            
+            rm -rf ./FastBCP ./FastBCP_extracted
+          fi
+          
+          # For scheduled builds, update latest with the most recent version
           if [ "${{ github.event_name }}" = "schedule" ] && [ -n "$VERSIONS" ]; then
             LATEST_VERSION=$(echo "$VERSIONS" | tr ' ' '\n' | tail -n 1)
             echo "Tagging latest with ${LATEST_VERSION}..."
