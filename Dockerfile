@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM dhi.io/debian-base:trixie@sha256:9bbe6d9dc0d7c341be923f144089a04a91985fe4b7509beacb6154c562f6b475
+FROM dhi.io/debian-base:trixie
 
 
 # Common runtime packages for self-contained .NET binaries (ICU/SSL/zlib/Kerberos), CA, tz, curl
