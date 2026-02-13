@@ -20,17 +20,24 @@ This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **
 
 ## Table of contents
 
+### Building Your Own Image
 * [Prerequisites](#prerequisites)
 * [Get the binary](#get-the-binary-for-build-only)
 * [Build](#build)
 * [Run FastBCP](#run-fastbcp)
+
+### Using the Prebuilt Image from DockerHub
 * [Prebuilt image on DockerHub](#prebuilt-image-on-dockerhub)
 * [Usage](#usage)
 * [Examples](#examples)
+
+### Configuration & Advanced Usage
 * [Volumes](#volumes)
 * [Configuring FastBCP Logging](#configuring-fastbcp-logging-with-custom-settings)
 * [Performance & networking](#performance--networking)
 * [Security tips](#security-tips)
+
+### Reference
 * [Troubleshooting](#troubleshooting)
 * [Notes](#notes)
 
