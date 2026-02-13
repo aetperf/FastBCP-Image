@@ -5,6 +5,7 @@ FROM dhi.io/debian-base:trixie
 # Common runtime packages for self-contained .NET binaries (ICU/SSL/zlib/Kerberos), CA, tz, curl
 RUN set -eux; \
     apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates tzdata curl \
       passwd \
