@@ -423,4 +423,4 @@ If the `--settingsfile` argument is not provided, FastBCP will use its built-in 
 - This image **embeds the proprietary FastBCP binary**. You must provide a valid license (or request a trial license) for the tool to work. **Do not share your private license outside your organization.**
 - OCI labels are set for traceability (source, vendor, license).
 - **Security maintenance:** The latest version of each minor branch (e.g., v0.27.x, v0.28.x, v0.29.x) is automatically rebuilt weekly with security patches, ensuring long-term security without forcing upgrades to newer minor versions.
-- For questions or support, visit [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/) or contact [ARPE](https://www.arpe.io/).
+- For questions or support, visit [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/) or contact [ARPE.IO](https://www.arpe.io/).
