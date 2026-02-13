@@ -1,11 +1,21 @@
-# FastBCP - Docker Image (Linux x64) – v0.28.0+
+# FastBCP Docker Image
 
-Minimal, production‑ready container image to run **FastBCP** (parallel export CLI). This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **inline** via `--license "<content>"` 
+Minimal, production‑ready container image to run **[FastBCP](https://www.arpe.io/fastbcp)** (parallel export CLI), a high-performance bulk copy utility designed for data integration and automation workflows.
 
-> **Binary required for custom build**  
+This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **inline** via `--license "<content>"`.
+
+## Image Overview
+
+* **Base image:** `dhi.io/debian-base:trixie`
+* **Entrypoint:** `/usr/local/bin/FastBCP`
+* **Repository:** [https://github.com/aetperf/FastBCP-Image](https://github.com/aetperf/FastBCP-Image)
+* **DockerHub:** [aetp/fastbcp](https://hub.docker.com/r/aetp/fastbcp)
+* **Published automatically** via GitHub Actions for each new release and weekly security updates
+
+> **For custom builds**  
 > The FastBCP binary is **not** distributed in this repository. Request the **Linux x64** build here:  
-> https://fastbcp.arpe.io/start/
-> unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
+> https://fastbcp.arpe.io/start/  
+> Unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
 
 ## Table of contents
@@ -14,10 +24,9 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 * [Get the binary](#get-the-binary-for-build-only)
 * [Build](#build)
 * [Run FastBCP](#run-fastbcp)
-* [License](#license)
 * [Prebuilt image on DockerHub](#prebuilt-image-on-dockerhub)
 * [Usage](#usage)
-* [Samples](#samples)
+* [Examples](#examples)
 * [Volumes](#volumes)
 * [Configuring FastBCP Logging](#configuring-fastbcp-logging-with-custom-settings)
 * [Performance & networking](#performance--networking)
@@ -33,7 +42,7 @@ Minimal, production‑ready container image to run **FastBCP** (parallel export 
 - Optional: `FastBCP_Settings.json` to mount/copy into `/config` for custom logging settings
 
 ## Get the binary (for build only)
-1. Request a trial: https://fastbcp.arpe.io/start/
+1. Request a trial: https://fastbcp.arpe.io
 2. Rename the downloaded file to `fastbcp` and ensure it is executable if testing locally:
    ```bash
    chmod +x fastbcp
@@ -52,44 +61,79 @@ This container has `ENTRYPOINT` set to the `fastbcp` binary. Any arguments you p
 docker run --rm fastbcp:latest --help
 ```
 
-## License
-Since 0.28.0, pass the **license content directly** via `--license "…"`. Several 
+## Prebuilt image on DockerHub
 
-## Prebuilt image on dockerhub
-You can also use a prebuilt image on DockerHub that already include the binary. You must provide your own license at runtime.
-- dockerhub versions/releases are aligned with the fastbcp versions/releases.
+You can use a prebuilt image from DockerHub that already includes the FastBCP binary. You must provide your own license at runtime.
+
+**DockerHub repository:** [aetp/fastbcp](https://hub.docker.com/r/aetp/fastbcp)
+
+### Available tags
+- **Version-specific tags** are aligned with FastBCP releases (e.g., `v0.28.3`)
+- **`latest`** tag always points to the most recent FastBCP version
+
+### Automatic updates
+- **New releases:** Images are automatically built when new FastBCP versions are released
+- **Security updates:** All version tags are automatically rebuilt weekly (every Monday) to include the latest base image and security patches
+
+### Pull the image
 
 ```bash
+# Latest version
 docker pull aetp/fastbcp:latest
-```
-or 
-```bash
+
+# Specific version
 docker pull aetp/fastbcp:v0.28.3
+```
+
+### Run FastBCP directly
+
+```bash
+# Get help
+docker run --rm aetp/fastbcp:latest
+
+# Check version
+docker run --rm aetp/fastbcp:latest --version
 ```
 
 # Usage
 
-the docker image use as entrypoint the fastbcp binary, so you can run it directly with parameters like defined in the [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/).
+The Docker image uses the FastBCP binary as its entrypoint, so you can run it directly with parameters as defined in the [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/).
 
-You can get the **command line help** using this 
+### Basic commands
 
 ```bash
+# Get command line help
 docker run --rm aetp/fastbcp:latest
-```
 
-You can get the **version** using this 
-
-```bash
+# Check version
 docker run --rm aetp/fastbcp:latest --version
 ```
 
-## Samples
+### License requirement
 
-- **Export from sql server to parquet on S3**:
+Since version 0.28.0, pass the **license content directly** via `--license "…"`.
+
+```bash
+export licenseContent=$(cat ./FastBCP.lic)
+
+# Use $licenseContent in your docker run commands
+docker run --rm aetp/fastbcp:latest \
+  --license "$licenseContent" \
+  [other parameters...]
+```
+
+**Best practice:** Prefer `--env-file`, Docker/Compose/Kubernetes secrets, or managed identities for cloud credentials. Avoid leaving the license content in shell history.
+
+## Examples
+
+> The exact parameters depend on your source and target settings. The snippets below illustrate the call pattern from Docker in a **Linux shell**.
+
+### 1) SQL Server → Parquet on S3
 
 ```bash  
-export licenseContent = cat ./FastBCP.lic
-docker run --rm  \
+export licenseContent=$(cat ./FastBCP.lic)
+
+docker run --rm \
 -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
 -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
 -e AWS_REGION=${AWS_REGION} \
@@ -99,41 +143,33 @@ aetp/fastbcp:latest \
 --user "FastUser" \
 --password "FastPassword" \
 --database "tpch_test" \
---query "SELECT * FROM dbo.orders where year(o_orderdate)=1998" \
+--query "SELECT * FROM dbo.orders WHERE year(o_orderdate)=1998" \
 --fileoutput "orders.parquet" \
 --directory "s3://aetpftoutput/dockertest/" \
 --paralleldegree 12 \
 --parallelmethod "Ntile" \
 --distributekeycolumn "o_orderkey" \
 --merge false \
---license $licenseContent 
+--license "$licenseContent"
 ```
 
+### 2) SQL Server → CSV with custom logging
 
-**Good practice**: prefer `--env-file`, Docker/Compose/Kubernetes secrets, or managed identities for cloud credentials. Avoid leaving the license content in shell history.
-
-## Volumes
-- `/work`   – working directory (container `WORKDIR`)
-- `/config` – optional configuration directory (e.g. to store `FastBCP_Settings.json` for custom logging)
-- `/data`   – target source/exports
-- `/logs`   – logs directory (ensure that `FastBCP_Settings.json` is configured to write logs to this directory)
-
-
-## Other Examples
-
-> The exact parameters depend on your source and target settings. The snippets below illustrate the call pattern from Docker in a **linux shell**.
-
-### 1) Export from sql server to csv /data using a filtered query as source and Ntile method as parallelism
 ```bash
-export licenseContent = cat ./FastBCP.lic
+export licenseContent=$(cat ./FastBCP.lic)
+
 docker run --rm \
+-v fastbcp-config:/config \
+-v fastbcp-data:/data \
+-v fastbcp-logs:/logs \
 aetp/fastbcp:latest \
+--settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
 --connectiontype "mssql" \
 --server "host.docker.internal,1433" \
 --user "FastUser" \
 --password "FastPassword" \
 --database "tpch_test" \
---query "SELECT * FROM dbo.orders where year(o_orderdate)=1998" \
+--query "SELECT * FROM dbo.orders WHERE year(o_orderdate)=1998" \
 --fileoutput "orders.csv" \
 --directory "/data/orders/csv" \
 --delimiter "|" \
@@ -143,15 +179,16 @@ aetp/fastbcp:latest \
 --parallelmethod "Ntile" \
 --distributekeycolumn "o_orderkey" \
 --merge false \
---license $licenseContent 
+--license "$licenseContent"
 ```
 
-### 2) PostgreSQL → partitioned Parquet to adls using a filtered query as source and Ctid method as parallelism
-```bash
-export licenseContent = $(cat ./FastBCP.lic)
-export adlscontainer = "aetpadlseu"
+### 3) PostgreSQL → Parquet on Azure Data Lake Storage (ADLS)
 
-docker run --rm  \
+```bash
+export licenseContent=$(cat ./FastBCP.lic)
+export adlscontainer="aetpadlseu"
+
+docker run --rm \
 -e AZURE_CLIENT_ID=${AZURE_CLIENT_ID} \
 -e AZURE_TENANT_ID=${AZURE_TENANT_ID} \
 -e AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET} \
@@ -163,24 +200,23 @@ aetp/fastbcp:latest \
 --database "tpch" \
 --sourceschema "tpch_10" \
 --sourcetable "orders" \
---query "SELECT * FROM tpch_10.orders where o_orderdate >= '1998-01-01' and o_orderdate < '1999-01-01'" \
+--query "SELECT * FROM tpch_10.orders WHERE o_orderdate >= '1998-01-01' AND o_orderdate < '1999-01-01'" \
 --fileoutput "orders.parquet" \
 --directory "abfss://${adlscontainer}.dfs.core.windows.net/fastbcpoutput/testdfs/orders" \
 --paralleldegree -2 \
 --parallelmethod "Ctid" \
---license $licenseContent 
+--license "$licenseContent"
 ```
 
-### 3) Oracle (oraodp) → partitioned Parquet to gcs using table only as source and Rowid method as parallelism auto (-2)
-```bash
-export licenseContent = $(cat ./FastBCP.lic)
-export gcsbucket = "aetp-gcs-bucket"
+### 4) Oracle → Parquet on Google Cloud Storage (GCS)
 
-// get GCP credentials JSON content from file, then copy to env var
+```bash
+export licenseContent=$(cat ./FastBCP.lic)
+export gcsbucket="aetp-gcs-bucket"
 export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(cat ./gcp-credentials.json)
 
 docker run --rm \
--e GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS_JSON} \
+-e GOOGLE_APPLICATION_CREDENTIALS="${GOOGLE_APPLICATION_CREDENTIALS_JSON}" \
 aetp/fastbcp:latest \
 --connectiontype "oraodp" \
 --server "host.docker.internal:1521/FREEPDB1" \
@@ -193,8 +229,25 @@ aetp/fastbcp:latest \
 --directory "gs://${gcsbucket}/fastbcpoutput/testgs/orders" \
 --parallelmethod "Rowid" \
 --paralleldegree -2 \
---license $licenseContent 
+--license "$licenseContent"
 ```
+
+## Volumes
+
+The Docker image declares several volumes to organize data and configuration:
+
+```dockerfile
+VOLUME ["/config", "/data", "/work", "/logs"]
+```
+
+### Volume configuration and access modes
+
+| Volume Path | Description                                                         | Access Mode               | Typical Usage                                   |
+| ----------- | ------------------------------------------------------------------- | ------------------------- | ----------------------------------------------- |
+| `/config`   | Contains user-provided configuration files (e.g., Serilog settings) | **Read-only / Read-many** | Shared across multiple containers; not modified |
+| `/data`     | Input/output data directory                                         | **Read-many/Write-many**  | Stores imported or exported data files          |
+| `/work`     | Temporary working directory (container `WORKDIR`)                   | **Read-many/Write-many**  | Used internally for temporary processing        |
+| `/logs`     | Log output directory (per-run or aggregated logs)                   | **Read-many/Write-many**  | Stores runtime and execution logs               |
 
 ## Configuring FastBCP Logging with Custom Settings
 
@@ -203,7 +256,10 @@ aetp/fastbcp:latest \
 FastBCP supports **custom logging configuration** through an external Serilog settings file in JSON format.
 This allows you to control **how and where logs are written** — to the console, to files, or dynamically per run.
 
-[Custom settings files](FastBCP_Settings_Logs_To_Files.json) must be **mounted into the container** under the `/config` directory.
+You can download an example logging settings file directly from GitHub:  
+**[FastBCP_Settings_Logs_To_Files.json](https://raw.githubusercontent.com/aetperf/FastBCP-Image/main/FastBCP_Settings_Logs_To_Files.json)**
+
+Custom settings files must be **mounted into the container** under the `/config` directory.
 
 
 ---
@@ -302,52 +358,40 @@ You can use the following placeholders to dynamically generate log file names or
 
 ### Mounting a Custom Settings File
 
-The Docker image declares several volumes to organize data and configuration:
-
-```dockerfile
-VOLUME ["/config", "/data", "/work", "/logs"]
-```
-
 Your Serilog configuration file (for example, `FastBCP_Settings_Logs_To_Files.json`) must be placed in `/config`,
 either by mounting a local directory or by using a Docker named volume.
 
-Example:
+Example with named volumes:
 
 ```bash
+# First, copy your config file to a volume location
+cp ~/FastBCP_Settings_Logs_To_Files.json /volumes/fastbcp-config/
+
+# Then run FastBCP with mounted volumes
 docker run --rm \
-  -v D:\FastBCP\config:/config \
-  -v fastbcp-data:/data \
-  -v fastbcp-logs:/logs \
-  aetp/fastbcp:latest \
-  --settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
-  --connectiontype "mssql" \
-  --server "host.docker.internal,1433" \
-  --user "FastUser" \
-  --password "FastPassword" \
-  --database "tpch_test" \
-  --query "SELECT * FROM dbo.orders" \
-  --fileoutput "orders.csv" \
-  --directory "/data" \
-  --paralleldegree 12 \
-  --parallelmethod "Ntile" \
-  --distributekeycolumn "o_orderkey" \
-  --merge false 
+-v fastbcp-config:/config \
+-v fastbcp-data:/data \
+-v fastbcp-logs:/logs \
+aetp/fastbcp:latest \
+--settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
+--connectiontype "mssql" \
+--server "host.docker.internal,1433" \
+--user "FastUser" \
+--password "FastPassword" \
+--database "tpch_test" \
+--query "SELECT * FROM dbo.orders" \
+--fileoutput "orders.csv" \
+--directory "/data" \
+--paralleldegree 12 \
+--parallelmethod "Ntile" \
+--distributekeycolumn "o_orderkey" \
+--merge false \
+--license "$licenseContent"
 ```
 
 If the `--settingsfile` argument is not provided, FastBCP will use its built-in default logging configuration.
 
 ---
-
-### Volume Configuration and Access Modes
-
-| Volume Path | Description                                                         | Access Mode           | Typical Usage                                   |
-| ----------- | ------------------------------------------------------------------- | --------------------- | ----------------------------------------------- |
-| `/config`   | Contains user-provided configuration files (e.g., Serilog settings) | Read-Only / Read-Many | Shared across multiple containers; not modified |
-| `/data`     | Input/output data directory                                         | Read-Many/Write-Many       | Stores imported or exported data files          |
-| `/work`     | Temporary working directory                                         | Read-Many/Write-Many       | Used internally for temporary processing        |
-| `/logs`     | Log output directory (per-run or aggregated logs)                   | Read-Many/Write-Many       | Stores runtime and execution logs               |
-
-
 
 ## Performance & networking
 - Place `/data` on fast storage (NVMe) when exporting large datasets locally.
@@ -362,10 +406,12 @@ If the `--settingsfile` argument is not provided, FastBCP will use its built-in 
 
 ## Troubleshooting
 - **Exec format error** → ensure the binary is Linux x64 and executable (`chmod +x fastbcp`).
-- **Missing `libicu`/`libssl`/`zlib`/`krb5`** → the image includes `libicu72`, `libssl3`, `zlib1g`, `libkrb5-3`. If your build requires additional libs, add them via `apt`.
+- **Missing `libicu`/`libssl`/`zlib`/`krb5`** → the image includes `libicu76`, `libssl3`, `zlib1g`, `libkrb5-3`. If your build requires additional libs, add them via `apt`.
 - **Permission denied** writing under `/data` → ensure the host directory permissions match the container UID (`10001`).
 - **DB host not reachable** → on Linux, use `--add-host=host.docker.internal:host-gateway` or the Compose `extra_hosts` equivalent.
 
 ## Notes
-- This image **does** embed the proprietary binary. you must provide a valid license (or request trial license) in order to work. **Do not share your private license outside your company**
+- This image **embeds the proprietary FastBCP binary**. You must provide a valid license (or request a trial license) for the tool to work. **Do not share your private license outside your organization.**
 - OCI labels are set for traceability (source, vendor, license).
+- Images are automatically updated weekly with the latest security patches from the base image.
+- For questions or support, visit [FastBCP documentation](https://fastbcp.arpe.io/docs/latest/) or contact [ARPE](https://www.arpe.io/).
