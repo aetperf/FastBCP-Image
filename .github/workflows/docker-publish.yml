@@ -70,6 +70,8 @@ jobs:
           fi
 
       - name: Build and push all versions
+        env:
+          S3_BASE_PATH: ${{ secrets.AWS_S3_FASTBCP_PATH }}
         run: |
           NEW_VERSION="${{ steps.versions.outputs.new_version }}"
           VERSIONS="${{ steps.versions.outputs.versions }}"
@@ -88,7 +90,7 @@ jobs:
             
             # Download FastBCP binary
             FILE="FastBCP-linux-x64-${VERSION}.zip"
-            S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
+            S3_PATH="${S3_BASE_PATH}${FILE}"
             
             echo "Checking if ${S3_PATH} exists..."
             if ! aws s3 ls "${S3_PATH}" >/dev/null 2>&1; then
@@ -128,7 +130,7 @@ jobs:
             echo "================================================"
             
             FILE="FastBCP-linux-x64-${NEW_VERSION}.zip"
-            S3_PATH="s3://aetpshared/FastBCP/full/${FILE}"
+            S3_PATH="${S3_BASE_PATH}${FILE}"
             
             echo "Checking if ${S3_PATH} exists..."
             aws s3 ls "${S3_PATH}" >/dev/null
