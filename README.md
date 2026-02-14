@@ -6,7 +6,7 @@ This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **
 
 ## Image Overview
 
-* **Base image:** `dhi.io/debian-base:trixie`
+* **Base image:** `debian:trixie-slim`
 * **Entrypoint:** `/usr/local/bin/FastBCP`
 * **Repository:** [https://github.com/aetperf/FastBCP-Image](https://github.com/aetperf/FastBCP-Image)
 * **DockerHub:** [aetp/fastbcp](https://hub.docker.com/r/aetp/fastbcp)
