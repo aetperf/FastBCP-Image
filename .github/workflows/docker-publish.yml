@@ -162,11 +162,15 @@ jobs:
           
           # For scheduled builds, update latest with the most recent version
           if [ "${{ github.event_name }}" = "schedule" ] && [ -n "$VERSIONS" ]; then
-            LATEST_VERSION=$(echo "$VERSIONS" | tr ' ' '\n' | tail -n 1)
-            echo "Tagging latest with ${LATEST_VERSION}..."
-            docker buildx imagetools create \
-              aetp/fastbcp:${LATEST_VERSION} \
-              --tag aetp/fastbcp:latest
+            LATEST_VERSION=$(echo "$VERSIONS" | tr ' ' '\n' | grep -v '^$' | tail -n 1)
+            if [ -n "$LATEST_VERSION" ]; then
+              echo "Tagging latest with ${LATEST_VERSION}..."
+              docker buildx imagetools create \
+                aetp/fastbcp:${LATEST_VERSION} \
+                --tag aetp/fastbcp:latest
+            else
+              echo "⚠️  Warning: No valid version found to tag as latest"
+            fi
           fi
 
       - name: Smoke test
