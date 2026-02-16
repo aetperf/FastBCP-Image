@@ -1,6 +1,6 @@
 # FastBCP Docker Image
 
-Minimal, production‑ready container image to run **[FastBCP](https://www.arpe.io/fastbcp)** (parallel export CLI), a high-performance bulk copy utility designed for data integration and automation workflows.
+Minimal, production‑ready container image to run **[FastBCP](https://fastbcp.arpe.io)** (parallel export CLI), a high-performance bulk copy utility designed for data integration and automation workflows.
 
 This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **inline** via `--license "<content>"`.
 
@@ -8,13 +8,13 @@ This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **
 
 * **Base image:** `debian:trixie-slim`
 * **Entrypoint:** `/usr/local/bin/FastBCP`
-* **Repository:** [https://github.com/aetperf/FastBCP-Image](https://github.com/aetperf/FastBCP-Image)
-* **DockerHub:** [aetp/fastbcp](https://hub.docker.com/r/aetp/fastbcp)
+* **Repository:** [https://github.com/arpe-io/FastBCP-Image](https://github.com/arpe-io/FastBCP-Image)
+* **DockerHub:** [arpeio/fastbcp](https://hub.docker.com/repository/docker/arpeio/fastbcp/general)
 * **Published automatically** via GitHub Actions for each new release and weekly security updates
 
 > **For custom builds**  
 > The FastBCP binary is **not** distributed in this repository. Request the **Linux x64** build here:  
-> https://fastbcp.arpe.io/start/  
+> [FastBCP trial](https://arpe.io/get-trial?product=FastBCP). 
 > Unzip and place it at the repository root (next to the `Dockerfile`), then build your own custom image.
 
 
@@ -49,7 +49,7 @@ This setup targets **FastBCP ≥ 0.28.0**, which supports passing the license **
 - Optional: `FastBCP_Settings.json` to mount/copy into `/config` for custom logging settings
 
 ## Get the binary (for build only)
-1. Request a trial: https://fastbcp.arpe.io
+1. Request a trial: [FastBCP trial](https://arpe.io/get-trial?product=FastBCP)
 2. Rename the downloaded file to `fastbcp` and ensure it is executable if testing locally:
    ```bash
    chmod +x fastbcp
@@ -72,7 +72,7 @@ docker run --rm fastbcp:latest --help
 
 You can use a prebuilt image from DockerHub that already includes the FastBCP binary. You must provide your own license at runtime.
 
-**DockerHub repository:** [aetp/fastbcp](https://hub.docker.com/r/aetp/fastbcp)
+**DockerHub repository:** [arpeio/fastbcp](https://hub.docker.com/repository/docker/arpeio/fastbcp/general)
 
 ### Available tags
 - **Version-specific tags** are aligned with FastBCP releases (e.g., `v0.28.3`)
@@ -88,20 +88,20 @@ You can use a prebuilt image from DockerHub that already includes the FastBCP bi
 
 ```bash
 # Latest version
-docker pull aetp/fastbcp:latest
+docker pull arpeio/fastbcp:latest
 
 # Specific version
-docker pull aetp/fastbcp:v0.28.3
+docker pull arpeio/fastbcp:v0.28.3
 ```
 
 ### Run FastBCP directly
 
 ```bash
 # Get help
-docker run --rm aetp/fastbcp:latest
+docker run --rm arpeio/fastbcp:latest
 
 # Check version
-docker run --rm aetp/fastbcp:latest --version
+docker run --rm arpeio/fastbcp:latest --version
 ```
 
 # Usage
@@ -112,10 +112,10 @@ The Docker image uses the FastBCP binary as its entrypoint, so you can run it di
 
 ```bash
 # Get command line help
-docker run --rm aetp/fastbcp:latest
+docker run --rm arpeio/fastbcp:latest
 
 # Check version
-docker run --rm aetp/fastbcp:latest --version
+docker run --rm arpeio/fastbcp:latest --version
 ```
 
 ### License requirement
@@ -126,7 +126,7 @@ Since version 0.28.0, pass the **license content directly** via `--license "…"
 export licenseContent=$(cat ./FastBCP.lic)
 
 # Use $licenseContent in your docker run commands
-docker run --rm aetp/fastbcp:latest \
+docker run --rm arpeio/fastbcp:latest \
   --license "$licenseContent" \
   [other parameters...]
 ```
@@ -146,7 +146,7 @@ docker run --rm \
 -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
 -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
 -e AWS_REGION=${AWS_REGION} \
-aetp/fastbcp:latest \
+arpeio/fastbcp:latest \
 --connectiontype "mssql" \
 --server "host.docker.internal,1433" \
 --user "FastUser" \
@@ -154,7 +154,7 @@ aetp/fastbcp:latest \
 --database "tpch_test" \
 --query "SELECT * FROM dbo.orders WHERE year(o_orderdate)=1998" \
 --fileoutput "orders.parquet" \
---directory "s3://aetpftoutput/dockertest/" \
+--directory "s3://arpeioftoutput/dockertest/" \
 --paralleldegree 12 \
 --parallelmethod "Ntile" \
 --distributekeycolumn "o_orderkey" \
@@ -171,7 +171,7 @@ docker run --rm \
 -v fastbcp-config:/config \
 -v fastbcp-data:/data \
 -v fastbcp-logs:/logs \
-aetp/fastbcp:latest \
+arpeio/fastbcp:latest \
 --settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
 --connectiontype "mssql" \
 --server "host.docker.internal,1433" \
@@ -195,13 +195,13 @@ aetp/fastbcp:latest \
 
 ```bash
 export licenseContent=$(cat ./FastBCP.lic)
-export adlscontainer="aetpadlseu"
+export adlscontainer="arpeioadlseu"
 
 docker run --rm \
 -e AZURE_CLIENT_ID=${AZURE_CLIENT_ID} \
 -e AZURE_TENANT_ID=${AZURE_TENANT_ID} \
 -e AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET} \
-aetp/fastbcp:latest \
+arpeio/fastbcp:latest \
 --connectiontype "pgcopy" \
 --server "host.docker.internal:15432" \
 --user "FastUser" \
@@ -221,12 +221,12 @@ aetp/fastbcp:latest \
 
 ```bash
 export licenseContent=$(cat ./FastBCP.lic)
-export gcsbucket="aetp-gcs-bucket"
+export gcsbucket="arpeio-gcs-bucket"
 export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(cat ./gcp-credentials.json)
 
 docker run --rm \
 -e GOOGLE_APPLICATION_CREDENTIALS="${GOOGLE_APPLICATION_CREDENTIALS_JSON}" \
-aetp/fastbcp:latest \
+arpeio/fastbcp:latest \
 --connectiontype "oraodp" \
 --server "host.docker.internal:1521/FREEPDB1" \
 --user "TPCH_IN" \
@@ -381,7 +381,7 @@ docker run --rm \
 -v fastbcp-config:/config \
 -v fastbcp-data:/data \
 -v fastbcp-logs:/logs \
-aetp/fastbcp:latest \
+arpeio/fastbcp:latest \
 --settingsfile "/config/FastBCP_Settings_Logs_To_Files.json" \
 --connectiontype "mssql" \
 --server "host.docker.internal,1433" \
