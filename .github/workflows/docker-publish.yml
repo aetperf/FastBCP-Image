@@ -42,7 +42,7 @@ jobs:
         id: versions
         run: |
           # Get all existing tags from Docker Hub
-          ALL_VERSIONS=$(curl -s "https://hub.docker.com/v2/repositories/aetp/fastbcp/tags/?page_size=100" | \
+          ALL_VERSIONS=$(curl -s "https://hub.docker.com/v2/repositories/arpeio/fastbcp/tags/?page_size=100" | \
             jq -r '.results[].name' | grep '^v[0-9]' | sort -V)
           
           # Find the latest version of each minor branch (e.g., latest 0.28.x, 0.27.x, etc.)
@@ -111,7 +111,7 @@ jobs:
             docker buildx build \
               --push \
               --platform linux/amd64 \
-              --tag aetp/fastbcp:${VERSION} \
+              --tag arpeio/fastbcp:${VERSION} \
               --provenance=true \
               --sbom=true \
               --no-cache \
@@ -148,8 +148,8 @@ jobs:
             docker buildx build \
               --push \
               --platform linux/amd64 \
-              --tag aetp/fastbcp:${NEW_VERSION} \
-              --tag aetp/fastbcp:latest \
+              --tag arpeio/fastbcp:${NEW_VERSION} \
+              --tag arpeio/fastbcp:latest \
               --provenance=true \
               --sbom=true \
               --no-cache \
@@ -166,8 +166,8 @@ jobs:
             if [ -n "$LATEST_VERSION" ]; then
               echo "Tagging latest with ${LATEST_VERSION}..."
               docker buildx imagetools create \
-                aetp/fastbcp:${LATEST_VERSION} \
-                --tag aetp/fastbcp:latest
+                arpeio/fastbcp:${LATEST_VERSION} \
+                --tag arpeio/fastbcp:latest
             else
               echo "⚠️  Warning: No valid version found to tag as latest"
             fi
@@ -176,5 +176,5 @@ jobs:
       - name: Smoke test
         run: |
           set -eux
-          docker run --rm aetp/fastbcp:latest >/dev/null
+          docker run --rm arpeio/fastbcp:latest >/dev/null
           echo "✅ FastBCP runs"
