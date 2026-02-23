@@ -27,6 +27,9 @@ RUN mkdir -p /config /data /logs /airflow/xcom \
 COPY --chown=${USER}:${USER} FastBCP /usr/local/bin/FastBCP
 RUN chmod 0755 /usr/local/bin/FastBCP
 
+# Pre-warm .NET runtime by running FastBCP once (triggers decompression)
+RUN su - ${USER} -s /bin/sh -c '/usr/local/bin/FastBCP --version' || true
+
 # OCI Labels
 LABEL org.opencontainers.image.title="FastBCP (CLI) - Runtime Docker Image" \
       org.opencontainers.image.description="Minimal container to run FastBCP (parallel export to files/objects)" \
